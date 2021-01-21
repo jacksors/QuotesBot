@@ -59,7 +59,7 @@ async def on_message(message):
             df3.to_csv(str(message.channel.id) + '.csv', index=False)
             print('wrote')
             #Output the result to discord
-            await message.channel.send("Quote by <@" + author + "> added!")
+            await(await message.channel.send("Quote by <@" + author + "> added!")).delete(delay=10)
         else:
             #If the user sends a message that isnt a quote delete the message, display the warning, and delete the warning after 10 seconds
             await message.delete()
@@ -125,7 +125,7 @@ async def randomquote(ctx):
     rownum = random.randint(0,numrows-1)
     author = df.iat[rownum, 1]
     quote = df.iat[rownum, 0]
-    await ctx.send(str(quote) + " - <@%s>" % author)
+    await ctx.send(str(quote) + " - @%s" % author)
 
 @client.command()
 async def biggestdong(ctx):
