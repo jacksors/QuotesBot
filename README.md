@@ -14,7 +14,7 @@ Commands:
 +randomquote 
 
     Outputs a random quote from the user-specified quotes channel.
-+numquotes (@user)
++numquotes @user
     
     Outputs the number of quotes that the person mentioned has attributed to them.
 +setquoteschannel
