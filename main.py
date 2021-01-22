@@ -11,6 +11,7 @@ from random import choice
 from random import randrange
 from collections import Counter
 from discord.ext import commands
+from bot_token import *
 
 intents = discord.Intents.all()
 intents.members = True
@@ -125,7 +126,26 @@ async def randomquote(ctx):
     rownum = random.randint(0,numrows-1)
     author = df.iat[rownum, 1]
     quote = df.iat[rownum, 0]
-    await ctx.send(str(quote) + " - @%s" % author)
+    await ctx.send(str(quote) + " - @%s" % ctx.guild.get_member(author))
+
+@client.command()
+async def numquotes(ctx,*,message):
+    #var message = message content besides command
+    #get correct csv file for server (var df)
+    channeldf = pd.read_csv('channels.csv')
+    channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
+    df = pd.read_csv(str(channelid) + '.csv', sep=',')
+    #get the userid that the message sender is querying about (using the same code that the message grabber for the quotes channel uses)
+    history = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message) + "\n"
+    #Now for finding the author:
+    #split the message into a list of individual "words"
+    split_history = history.split(" ")
+    #Substitute any non numberic characters for blank and grab the last word in the message (this assumes the author is the last word which it must be for this to work)
+    author = re.sub(r'[^0-9]', '', split_history[-1])
+    userquotes = df['author'].value_counts().to_dict()
+    userquotes = userquotes[int(author)]
+    await ctx.send("@%s has %s quote(s) attributed to them." % (ctx.guild.get_member(int(author)),str(userquotes)))
+
 
 @client.command()
 async def biggestdong(ctx):
@@ -146,4 +166,4 @@ async def help(ctx):
     embed.add_field(name='+save', value='Will back up a prior quotes channel if you have one. Run it in the server you wish to add to your quotes database. Note that the quotes must be formatted correctly. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     await ctx.send(embed=embed)
     
-client.run('')
+client.run(BOT_TOKEN)
