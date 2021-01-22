@@ -10,6 +10,9 @@ Commands:
 +randomquote 
 
     Outputs a random quote from the user-specified quotes channel.
++numquotes (@user)
+    
+    Outputs the number of quotes that the person mentioned has attributed to them.
 +setquoteschannel
 
     Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
