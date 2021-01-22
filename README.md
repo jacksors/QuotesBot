@@ -2,6 +2,8 @@
 
 This bot manages a "quotes" system for discord servers. Users can put quotes into a channel, the bot records the quotes, and then users can recall a random quote with "+randomquote". Also has a few more smaller features.
 
+To use the bot, first run `pip install -r requirements.txt` to get the required libraries. Next, paste your bot key from the Discord dev portal into bot_token.py. Make sure that you have all of the intents enabled. Finally, run `python3 main.py` to start the bot.
+
 Commands:
 
 +mostquoted 
