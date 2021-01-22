@@ -6,23 +6,18 @@ To use the bot, first run `pip install -r requirements.txt` to get the required 
 
 My hosted implementation of this bot (up 24/7): [Add to your server](https://discord.com/api/oauth2/authorize?client_id=799028695368073255&permissions=748544&scope=bot)
 
-Commands:
+## Commands:
 
-+mostquoted 
+### +mostquoted 
+Outputs the person with the most quotes attributed to them
 
-    Outputs the person with the most quotes attributed to them\n
-+randomquote 
-
-    Outputs a random quote from the user-specified quotes channel.
-+numquotes @user
-    
-    Outputs the number of quotes that the person mentioned has attributed to them.
-+setquoteschannel
-
-    Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
-+delquoteschannel 
-
-    Type this in the channel your quotes channel if you wish for it to no longer be a quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
-+save
-
-    Will back up a prior quotes channel if you have one. Run it in the server you wish to add to your quotes database. Note that the quotes must be formatted correctly. In order to run this command, you must have the role "QuotesBot Admin"
+### +randomquote 
+Outputs a random quote from the user-specified quotes channel.
+### +numquotes @user
+Outputs the number of quotes that the person mentioned has attributed to them.
+### +setquoteschannel
+Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
+### +delquoteschannel 
+Type this in the channel your quotes channel if you wish for it to no longer be a quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
+### +save
+Will back up a prior quotes channel if you have one. Run it in the server you wish to add to your quotes database. Note that the quotes must be formatted correctly. In order to run this command, you must have the role "QuotesBot Admin"
