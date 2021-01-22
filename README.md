@@ -4,6 +4,8 @@ This bot manages a "quotes" system for discord servers. Users can put quotes int
 
 To use the bot, first run `pip install -r requirements.txt` to get the required libraries. Next, paste your bot key from the Discord dev portal into bot_token.py. Make sure that you have all of the intents enabled. Finally, run `python3 main.py` to start the bot.
 
+My hosted implementation of this bot (up 24/7): [Add to your server](https://discord.com/api/oauth2/authorize?client_id=799028695368073255&permissions=748544&scope=bot)
+
 Commands:
 
 +mostquoted 
