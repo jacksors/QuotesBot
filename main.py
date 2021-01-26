@@ -27,7 +27,7 @@ async def on_ready():
 @client.event
 async def on_message(message):
     df = pd.read_csv('channels.csv')
-    if (message.channel.id in df.values and message.author.id != 799028695368073255):
+    if (message.channel.id in df.values and message.author != client.user):
         #copied from copy() below
         #sanitize message input
         history = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message.content) + "\n"
@@ -52,19 +52,24 @@ async def on_message(message):
             df1 = pd.read_csv(str(message.channel.id) + '.csv')
             df2 = pd.DataFrame({'quote':[quote],
                                 'author':[author]})
-            print('made new dataframe')
             #Append the new quote (df2) onto the old datatable with all the other quotes (df1)
             df3 = df1.append(df2, ignore_index=True)
-            print('appended')
             #write the new datatable to file
             df3.to_csv(str(message.channel.id) + '.csv', index=False)
-            print('wrote')
             #Output the result to discord
             await(await message.channel.send("Quote by <@" + author + "> added!")).delete(delay=10)
+            return
+        elif (message.content == "+delqoteschannel"):
+            await client.process_commands(message)
+            return
+        elif (message.content == "+setquoteschannel"):
+            await(await message.channel.send("Channel is already set as the quotes channel!")).delete(delay=10)
+            return
         else:
             #If the user sends a message that isnt a quote delete the message, display the warning, and delete the warning after 10 seconds
             await message.delete()
             await(await message.channel.send("<@%s> please only send quotes! If you did send a quote, please format it as \"Quote\" @Author" % message.author.id)).delete(delay=10)
+            return
     #Pass on any messages that are irrelevant (arent in the quotes channel or are by this robot)
     await client.process_commands(message)
 
@@ -75,7 +80,7 @@ async def setquoteschannel(ctx):
     newchannel = pd.DataFrame({'Server_ID': [ctx.message.guild.id], 'Channel_ID': [ctx.message.channel.id]})
     new_list = past_channels.append(newchannel)
     new_list.to_csv('channels.csv', index=False)
-    await ctx.send('Channel %s set as quotes channel!' % client.get_channel(ctx.message.channel.id).mention)
+    await(await ctx.send('Channel %s set as quotes channel!' % client.get_channel(ctx.message.channel.id).mention)).delete(delay=10)
 
 @client.command()
 @commands.has_role('QuotesBot Admin')
@@ -83,6 +88,7 @@ async def delquoteschannel(ctx):
     df = pd.read_csv('channels.csv')
     df = df[~df['Channel_ID'].isin([str(ctx.message.channel.id)])]
     df.to_csv('channels.csv', index=False)
+    await(await ctx.send('Channel no longer a designated qutoes channel')).delete(delay=10)
 
 @client.command()
 @commands.has_role('QuotesBot Admin')
@@ -91,14 +97,10 @@ async def save(ctx):
     author_list = []
     async for message in ctx.history(limit=1000):
         msg = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message.content)
-        print('msg sani done')
         quote = re.findall(r'\"(.+?)\"',msg)
         quote = str(quote).strip("[]")
-        print(quote)
         split_msg = msg.split(" ")
-        print('split msg')
         author = re.sub(r'[^0-9]', '', split_msg[-1])
-        print('made author')
         if (author != '' and quote != ''):
             quote_list.append(quote)
             author_list.append(author)
@@ -159,6 +161,7 @@ async def help(ctx):
         colour = discord.Colour.blue()
         
     )
+    embed.add_field(name='Quote Formatting', value='All quotes must be formatted as \"quote\" @author, or else they will be rejected by the bot.', inline=False)
     embed.add_field(name='+mostquoted', value='Outputs the person with the most quotes attributed to them.', inline=False)
     embed.add_field(name='+randomquote', value='Outputs a random quote from the user-specified quotes channel.', inline=False)
     embed.add_field(name='+numquotes', value='Type this and @ a user to see how many quotes they have attributed to them.', inline=False)
