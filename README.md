@@ -10,8 +10,8 @@ My hosted implementation of this bot (up 24/7): [Add to your server](https://top
 
 ### +mostquoted 
 Outputs the person with the most quotes attributed to them
-### +randomquote 
-Outputs a random quote from the user-specified quotes channel.
+### +randomquote (optionally @user)
+Outputs a random quote from the user-specified quotes channel. Optionally, mention a user to get a random quote attributed to them.
 ### +numquotes @user
 Outputs the number of quotes that the person mentioned has attributed to them.
 ### +setquoteschannel
