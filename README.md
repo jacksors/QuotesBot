@@ -18,6 +18,8 @@ Outputs the number of quotes that the person mentioned has attributed to them.
 Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
 ### +delquoteschannel 
 Type this in the channel your quotes channel if you wish for it to no longer be a quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
+### +togglementions
+Toggles whether a the author of the quote is mentioned or not when randomquote and numquotes are run. On by default, but turn off to avoid excessive mentions in large servers.
 ### +save
 Will back up a prior quotes channel if you have one. Run it in the server you wish to add to your quotes database. Note that the quotes must be formatted correctly. In order to run this command, you must have the role "QuotesBot Admin"
 ### All quotes in your designated quotes channel must be formated as "quote here" @author. Otherwise, they will be rejected by the bot and deleted from the channel.

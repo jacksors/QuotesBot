@@ -19,6 +19,21 @@ client = commands.Bot(command_prefix = '+', intents=intents)
 
 client.remove_command('help')
 
+if not os.path.exists('channels.csv'):
+    with open('channels.csv', 'w') as f:
+        df = pd.DataFrame(columns = ['Server_ID','Channel_ID','Mentions'])
+        df.to_csv(f, index=False)
+
+def mention(ctx, usrid):
+    df = pd.read_csv('channels.csv')
+    mention = df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions'].values[0]
+    if mention == 'On':
+        msg = '<@' + str(usrid) + '>'
+        return msg
+    else:
+        msg = '@' + str(ctx.guild.get_member(int(usrid)))
+        return msg
+
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game('+help'))
@@ -60,7 +75,7 @@ async def on_message(message):
             #Output the result to discord
             await(await message.channel.send("Quote by <@" + author + "> added!")).delete(delay=10)
             return
-        elif (message.content == "+delqoteschannel"):
+        elif (message.content == "+delquoteschannel"):
             await client.process_commands(message)
             return
         elif (message.content == "+setquoteschannel"):
@@ -78,7 +93,10 @@ async def on_message(message):
 @commands.has_role('QuotesBot Admin')
 async def setquoteschannel(ctx):
     past_channels = pd.read_csv('channels.csv')
-    newchannel = pd.DataFrame({'Server_ID': [ctx.message.guild.id], 'Channel_ID': [ctx.message.channel.id]})
+    if ctx.message.guild.id in past_channels:
+        await(await ctx.send('Your server already has a quotes channel!')).delete(delay=10)
+        return
+    newchannel = pd.DataFrame({'Server_ID': [ctx.message.guild.id], 'Channel_ID': [ctx.message.channel.id], 'Mentions': 'On'})
     new_list = past_channels.append(newchannel)
     new_list.to_csv('channels.csv', index=False)
     await(await ctx.send('Channel %s set as quotes channel!' % client.get_channel(ctx.message.channel.id).mention)).delete(delay=10)
@@ -118,7 +136,7 @@ async def mostquoted(ctx):
     items_counts = df['author'].value_counts()
     max_item = items_counts.max()
     df = df.author.mode()
-    await ctx.send('<@%s> with %s quotes to their name.' % (df.values[0],max_item))
+    await ctx.send('%s with %s quotes to their name.' % (mention(ctx, df.values[0]),max_item))
 
 @client.command()
 async def randomquote(ctx,*,message=None):
@@ -134,7 +152,7 @@ async def randomquote(ctx,*,message=None):
         channeldf = pd.read_csv('channels.csv')
         channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
         df = pd.read_csv(str(channelid) + '.csv', sep=',')
-         #get the userid that the message sender is querying about (using the same code that the message grabber for the quotes channel uses)
+        #get the userid that the message sender is querying about (using the same code that the message grabber for the quotes channel uses)
         history = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message) + "\n"
         #Now for finding the author:
         #split the message into a list of individual "words"
@@ -146,7 +164,7 @@ async def randomquote(ctx,*,message=None):
         rownum = random.randint(0,numrows-1)
         author = df.iat[rownum, 1]
         quote = df.iat[rownum, 0]
-    await ctx.send(str(quote) + " - @%s" % ctx.guild.get_member(author))
+    await ctx.send(str(quote) + " - %s" % mention(ctx, author))
 
 @client.command()
 async def numquotes(ctx,*,message):
@@ -164,13 +182,21 @@ async def numquotes(ctx,*,message):
     author = re.sub(r'[^0-9]', '', split_history[-1])
     userquotes = df['author'].value_counts().to_dict()
     userquotes = userquotes[int(author)]
-    await ctx.send("@%s has %s quote(s) attributed to them." % (ctx.guild.get_member(int(author)),str(userquotes)))
-
+    await ctx.send("%s has %s quote(s) attributed to them." % (mention(ctx, author),str(userquotes)))
 
 @client.command()
-async def biggestdong(ctx):
-    user = choice(ctx.message.channel.guild.members)
-    await ctx.send("%s has the biggest dong!" % user.mention)
+@commands.has_role('QuotesBot Admin')
+async def togglementions(ctx):
+    df = pd.read_csv('channels.csv')
+    mentions = df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions'].values[0]
+    if mentions == 'On':
+        df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions']='Off'
+        df.to_csv('channels.csv', index=False)
+        await(await ctx.send('User mentions turned off')).delete(delay=10)
+    else:
+        df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions']='On'
+        df.to_csv('channels.csv', index=False)
+        await(await ctx.send('User mentions turned on')).delete(delay=10)
 
 @client.command()
 async def help(ctx):
@@ -185,6 +211,7 @@ async def help(ctx):
     embed.add_field(name='+numquotes @user', value='Type this and @ a user to see how many quotes they have attributed to them.', inline=False)
     embed.add_field(name='+setquoteschannel', value='Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='+delquoteschannel', value='Type this in the channel your quotes channel if you wish for it to no longer be a quotes channel. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
+    embed.add_field(name='+togglementions', value='Toggles whether a the author of the quote is mentioned or not when randomquote and numquotes are run. On by default, but turn off to avoid excessive mentions in large servers.', inline=False)
     embed.add_field(name='+save', value='Will back up a prior quotes channel if you have one. Run it in the server you wish to add to your quotes database. Note that the quotes must be formatted correctly. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='Links', value='[Github](https://github.com/jacksors/Quotes-Discord-Bot) | [Support Server](https://discord.gg/DmYw7CbXfT)', inline=False)
     await ctx.send(embed=embed)
