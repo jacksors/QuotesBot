@@ -160,7 +160,7 @@ async def randomquote(ctx,*,message=None):
         #Substitute any non numberic characters for blank and grab the last word in the message (this assumes the author is the last word which it must be for this to work)
         author = re.sub(r'[^0-9]', '', split_history[-1])
         if author == '':
-            await(await ctx.send('<%s> not a valid author!', message.author.id)
+            await(await ctx.send('<%s> not a valid author!', message.author.id))
             return
         df = df.loc[df['author'] == int(author)]
         numrows = df.shape[0]
