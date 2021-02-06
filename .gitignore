@@ -132,3 +132,4 @@ dmypy.json
 bot_token.py
 *.csv
 .vscode/*
+serverlist.txt

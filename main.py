@@ -15,6 +15,7 @@ from discord.ext import commands
 from bot_token import *
 
 intents = discord.Intents.default()
+intents.guilds = True
 client = commands.Bot(command_prefix = '+', intents=intents)
 
 client.remove_command('help')
@@ -39,6 +40,13 @@ async def on_ready():
     await client.change_presence(activity=discord.Game('+help'))
     setup(client)
     print('Bot is ready.')
+
+@client.event
+async def on_guild_join(guild):
+    f = open('serverlist.txt', 'a')
+    f.write(guild.name + '\n')
+    f.close
+    print('Joined %s' % guild.name)
 
 @client.event
 async def on_message(message):
