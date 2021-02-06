@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import numpy as np
 import random
+from topggapi import setup
 from random import choice
 from random import randrange
 from collections import Counter
@@ -14,7 +15,6 @@ from discord.ext import commands
 from bot_token import *
 
 intents = discord.Intents.default()
-intents.members = True
 client = commands.Bot(command_prefix = '+', intents=intents)
 
 client.remove_command('help')
@@ -37,6 +37,7 @@ def mention(ctx, usrid):
 @client.event
 async def on_ready():
     await client.change_presence(activity=discord.Game('+help'))
+    setup(client)
     print('Bot is ready.')
 
 @client.event
