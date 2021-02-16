@@ -2,7 +2,7 @@
 
 This bot manages a "quotes" system for discord servers. Users can put quotes into a channel, the bot records the quotes, and then users can recall a random quote with "+randomquote". Also has a few more smaller features.
 
-To use the bot you need to have Python 3 installed. The earliest version I tested it with was 3.8.5, however discord.py should work with 3.5 and later but I cannot guarantee anything. First run `pip3 install -r requirements.txt` to get the required libraries. Next, paste your bot key from the Discord dev portal into bot_token.py. Make sure that you have all of the intents enabled. Finally, run `python3 main.py` to start the bot.
+To use the bot you need to have Python 3 installed. The earliest version I tested it with was 3.8.5, however discord.py should work with 3.5 and later but I cannot guarantee anything. First run `pip3 install -r requirements.txt` to get the required libraries. Next, paste your bot key from the Discord dev portal into bot_token.py. Finally, run `python3 main.py` to start the bot.
 
 My hosted implementation of this bot (up 24/7): [Add to your server](https://top.gg/bot/799028695368073255)
 
