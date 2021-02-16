@@ -55,7 +55,7 @@ async def on_message(message):
         #copied from copy() below
         #sanitize message input
         history = re.sub(r'[\u201C\u201D\u201E\u201F\u2033\u2036]', '"', message.content)
-        history = re.sub(r'[^A-Za-z0-9\s,.?!:;"-]+', '', history) + "\n"
+        history = re.sub(r'[^A-Za-z0-9\s,.?!:;()"-]+', '', history) + "\n"
         #find part of message within double quotes
         quote = re.findall(r'\"(.+?)\"',history)
         #strip [] from the output of the part of the message within double quotes
