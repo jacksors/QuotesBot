@@ -12,6 +12,7 @@ from random import choice
 from random import randrange
 from collections import Counter
 from discord.ext import commands
+from discord.ext.commands import MissingPermissions
 from bot_token import *
 
 intents = discord.Intents.default()
@@ -51,7 +52,11 @@ async def on_guild_join(guild):
 @client.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.MissingRequiredArgument):
+        print("User tried a command without all required arguments")
         await(await ctx.send('Missing required argument.')).delete(delay=10)
+    if isinstance(error, MissingPermissions):
+        print("User without elevated permissions tried a command that requires them")
+        await(await ctx.send('You must have the role QuotesBot Admin to run this command.')).delete(delay=10)
 
 @client.event
 async def on_message(message):
