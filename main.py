@@ -49,13 +49,18 @@ async def on_guild_join(guild):
     print('Joined %s' % guild.name)
 
 @client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await(await ctx.send('Missing required argument.')).delete(delay=10)
+
+@client.event
 async def on_message(message):
     df = pd.read_csv('channels.csv')
     if (message.channel.id in df.values and message.author != client.user):
         #copied from copy() below
         #sanitize message input
         history = re.sub(r'[\u201C\u201D\u201E\u201F\u2033\u2036]', '"', message.content)
-        history = re.sub(r'[^A-Za-z0-9\s,.?!:;()"-]+', '', history) + "\n"
+        history = re.sub(r'[^A-Za-z0-9\s,.?!:;()@#$%^&*_+-=<>"-]+', '', history) + "\n"
         #find part of message within double quotes
         quote = re.findall(r'\"(.+?)\"',history)
         #strip [] from the output of the part of the message within double quotes
@@ -84,11 +89,16 @@ async def on_message(message):
             #Output the result to discord
             await(await message.channel.send("Quote by <@" + author + "> added!")).delete(delay=10)
             return
+        elif (message.content == "+setquoteschannel"):
+            await message.delete()
+            await(await message.channel.send("Channel is already set as the quotes channel!")).delete(delay=10)
+            return
         elif (message.content == "+delquoteschannel"):
             await client.process_commands(message)
             return
-        elif (message.content == "+setquoteschannel"):
-            await(await message.channel.send("Channel is already set as the quotes channel!")).delete(delay=10)
+        elif (message.content.startswith("+")):
+            await message.delete()
+            await(await message.channel.send("<@%s> please do not send commands in the quotes channel!" % message.author.id)).delete(delay=10)
             return
         else:
             #If the user sends a message that isnt a quote delete the message, display the warning, and delete the warning after 10 seconds
@@ -139,25 +149,58 @@ async def save(ctx):
                 
 @client.command()
 async def mostquoted(ctx):
-    channeldf = pd.read_csv('channels.csv')
-    channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
-    df = pd.read_csv(str(channelid) + '.csv', sep=',')
-    items_counts = df['author'].value_counts()
-    max_item = items_counts.max()
-    df = df.author.mode()
-    await ctx.send('%s with %s quotes to their name.' % (mention(ctx, df.values[0]),max_item))
-
-@client.command()
-async def randomquote(ctx,*,message=None):
-    if (message == None):
+    try:
         channeldf = pd.read_csv('channels.csv')
         channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
         df = pd.read_csv(str(channelid) + '.csv', sep=',')
-        numrows = df.shape[0]
-        rownum = random.randint(0,numrows-1)
-        author = df.iat[rownum, 1]
-        quote = df.iat[rownum, 0]
-    else:
+        items_counts = df['author'].value_counts()
+        max_item = items_counts.max()
+        df = df.author.mode()
+        await ctx.send('%s with %s quotes to their name.' % (mention(ctx, df.values[0]),max_item))
+    except FileNotFoundError:
+        print('Usr attempted +mostquoted in srvr with no quotes')
+        await(await ctx.send('This server does not have any quotes.')).delete(delay=10)
+
+@client.command()
+async def randomquote(ctx,*,message=None):
+    try:
+        if (message == None):
+            channeldf = pd.read_csv('channels.csv')
+            channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
+            df = pd.read_csv(str(channelid) + '.csv', sep=',')
+            numrows = df.shape[0]
+            rownum = random.randint(0,numrows-1)
+            author = df.iat[rownum, 1]
+            quote = df.iat[rownum, 0]
+        else:
+            channeldf = pd.read_csv('channels.csv')
+            channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
+            df = pd.read_csv(str(channelid) + '.csv', sep=',')
+            #get the userid that the message sender is querying about (using the same code that the message grabber for the quotes channel uses)
+            history = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message) + "\n"
+            #Now for finding the author:
+            #split the message into a list of individual "words"
+            split_history = history.split(" ")
+            #Substitute any non numberic characters for blank and grab the last word in the message (this assumes the author is the last word which it must be for this to work)
+            author = re.sub(r'[^0-9]', '', split_history[-1])
+            if author == '':
+                await(await ctx.send('<@%s> not a valid author!' % ctx.author.id)).delete(delay=10)
+                return
+            df = df.loc[df['author'] == int(author)]
+            numrows = df.shape[0]
+            rownum = random.randint(0,numrows-1)
+            author = df.iat[rownum, 1]
+            quote = df.iat[rownum, 0]
+        await ctx.send(str(quote) + " - %s" % mention(ctx, author))
+    except FileNotFoundError:
+        print('User attempted +randomquote in server with no quotes')
+        await(await ctx.send('This server does not have any quotes.')).delete(delay=10)
+
+@client.command()
+async def numquotes(ctx,*,message):
+    try:
+        #var message = message content besides command
+        #get correct csv file for server (var df)
         channeldf = pd.read_csv('channels.csv')
         channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
         df = pd.read_csv(str(channelid) + '.csv', sep=',')
@@ -168,33 +211,12 @@ async def randomquote(ctx,*,message=None):
         split_history = history.split(" ")
         #Substitute any non numberic characters for blank and grab the last word in the message (this assumes the author is the last word which it must be for this to work)
         author = re.sub(r'[^0-9]', '', split_history[-1])
-        if author == '':
-            await(await ctx.send('<@%s> not a valid author!' % ctx.author.id)).delete(delay=10)
-            return
-        df = df.loc[df['author'] == int(author)]
-        numrows = df.shape[0]
-        rownum = random.randint(0,numrows-1)
-        author = df.iat[rownum, 1]
-        quote = df.iat[rownum, 0]
-    await ctx.send(str(quote) + " - %s" % mention(ctx, author))
-
-@client.command()
-async def numquotes(ctx,*,message):
-    #var message = message content besides command
-    #get correct csv file for server (var df)
-    channeldf = pd.read_csv('channels.csv')
-    channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
-    df = pd.read_csv(str(channelid) + '.csv', sep=',')
-    #get the userid that the message sender is querying about (using the same code that the message grabber for the quotes channel uses)
-    history = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message) + "\n"
-    #Now for finding the author:
-    #split the message into a list of individual "words"
-    split_history = history.split(" ")
-    #Substitute any non numberic characters for blank and grab the last word in the message (this assumes the author is the last word which it must be for this to work)
-    author = re.sub(r'[^0-9]', '', split_history[-1])
-    userquotes = df['author'].value_counts().to_dict()
-    userquotes = userquotes[int(author)]
-    await ctx.send("%s has %s quote(s) attributed to them." % (mention(ctx, author),str(userquotes)))
+        userquotes = df['author'].value_counts().to_dict()
+        userquotes = userquotes[int(author)]
+        await ctx.send("%s has %s quote(s) attributed to them." % (mention(ctx, author),str(userquotes)))
+    except FileNotFoundError:
+        print('User attempted +numquotes in server with no quotes')
+        await(await ctx.send('This server does not have any quotes.')).delete(delay=10)
 
 @client.command()
 @commands.has_role('QuotesBot Admin')
