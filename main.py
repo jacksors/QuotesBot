@@ -4,9 +4,11 @@ import operator
 import re
 import time
 import os
-import pandas as pd
 import numpy as np
 import random
+import pymongo
+import pprint
+from pymongo import MongoClient
 from topggapi import setup
 from random import choice
 from random import randrange
@@ -21,15 +23,14 @@ client = commands.Bot(command_prefix = '+', intents=intents)
 
 client.remove_command('help')
 
-if not os.path.exists('channels.csv'):
-    with open('channels.csv', 'w') as f:
-        df = pd.DataFrame(columns = ['Server_ID','Channel_ID','Mentions'])
-        df.to_csv(f, index=False)
+cluster = MongoClient('')
+db = cluster['discordbot']
 
 def mention(ctx, usrid):
-    df = pd.read_csv('channels.csv')
-    mention = df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions'].values[0]
-    if mention == 'On':
+    collection = db['servers']
+    results = collection.find_one({"server_id":ctx.message.guild.id})
+    mention = results['mentions']
+    if mention == True:
         msg = '<@' + str(usrid) + '>'
         return msg
     else:
@@ -57,11 +58,13 @@ async def on_command_error(ctx, error):
     if isinstance(error, MissingPermissions):
         print("User without elevated permissions tried a command that requires them")
         await(await ctx.send('You must have the role QuotesBot Admin to run this command.')).delete(delay=10)
+    else:
+        print(error)
 
 @client.event
 async def on_message(message):
-    df = pd.read_csv('channels.csv')
-    if (message.channel.id in df.values and message.author != client.user):
+    collection = db['servers']
+    if (collection.count_documents({ 'channel_id':message.channel.id }, limit = 1) != 0 and message.author != client.user):
         #copied from copy() below
         #sanitize message input
         history = re.sub(r'[\u201C\u201D\u201E\u201F\u2033\u2036]', '"', message.content)
@@ -78,20 +81,8 @@ async def on_message(message):
         #Onto the database interaction using Pandas (pd)
         #Make sure the message included a quote and author
         if ((author != '' and quote != '')):
-            #check if the channel's csv exists yet and create one if not
-            if not os.path.exists(str(message.channel.id) + '.csv'):
-                with open(str(message.channel.id) + '.csv', 'w') as f:
-                    df = pd.DataFrame(columns = ['quote','author'])
-                    df.to_csv(f, index=False)
-            #Define vars for each data table
-            df1 = pd.read_csv(str(message.channel.id) + '.csv')
-            df2 = pd.DataFrame({'quote':[quote],
-                                'author':[author]})
-            #Append the new quote (df2) onto the old datatable with all the other quotes (df1)
-            df3 = df1.append(df2, ignore_index=True)
-            #write the new datatable to file
-            df3.to_csv(str(message.channel.id) + '.csv', index=False)
-            #Output the result to discord
+            collection = db['quotes']
+            collection.insert_one({'quote':quote, 'author':int(author), 'channel_id':message.channel.id, 'server_id':message.guild.id})
             await(await message.channel.send("Quote by <@" + author + "> added!")).delete(delay=10)
             return
         elif (message.content == "+setquoteschannel"):
@@ -116,71 +107,48 @@ async def on_message(message):
 @client.command()
 @commands.has_role('QuotesBot Admin')
 async def setquoteschannel(ctx):
-    past_channels = pd.read_csv('channels.csv')
-    if ctx.message.guild.id in past_channels:
+    collection = db['servers']
+    if collection.count_documents({ 'server_id':ctx.message.guild.id }, limit = 1) != 0:
         await(await ctx.send('Your server already has a quotes channel!')).delete(delay=10)
-        return
-    newchannel = pd.DataFrame({'Server_ID': [ctx.message.guild.id], 'Channel_ID': [ctx.message.channel.id], 'Mentions': 'On'})
-    new_list = past_channels.append(newchannel)
-    new_list.to_csv('channels.csv', index=False)
-    await(await ctx.send('Channel %s set as quotes channel!' % client.get_channel(ctx.message.channel.id).mention)).delete(delay=10)
+        print(True)
+    else:
+        collection.insert_one({'server_id': int(ctx.message.guild.id), 'channel_id': int(ctx.message.channel.id), 'mentions': True})
+        await(await ctx.send('Channel %s set as quotes channel!' % client.get_channel(ctx.message.channel.id).mention)).delete(delay=10)
+        print(False)
 
 @client.command()
 @commands.has_role('QuotesBot Admin')
-async def delquoteschannel(ctx):
-    df = pd.read_csv('channels.csv')
-    df = df[~df['Channel_ID'].isin([str(ctx.message.channel.id)])]
-    df.to_csv('channels.csv', index=False)
-    await(await ctx.send('Channel no longer a designated qutoes channel')).delete(delay=10)
+async def delquoteschannel(ctx,*, message=None):
+    if message == 'understood':
+        collection = db['servers']
+        collection.delete_many({ 'server_id':ctx.message.guild.id })
+        collection = db['quotes']
+        collection.delete_many({ 'server_id':ctx.message.guild.id })
+        await ctx.send('Your server no longer has a designated quotes channel and all previous quotes have been erased from the database.')
+    else:
+        await ctx.send('WARNING! This command will delete all of your quotes from the database. The quotes will remain in your quotes channel, but they will not be recallable through any of the commands this bot provides. In order to run this command, you must type `+delquoteschannel understood`')
 
-@client.command()
-@commands.has_role('QuotesBot Admin')
-async def save(ctx):
-    quote_list = []
-    author_list = []
-    async for message in ctx.history(limit=1000):
-        msg = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message.content)
-        quote = re.findall(r'\"(.+?)\"',msg)
-        quote = str(quote).strip("[]")
-        split_msg = msg.split(" ")
-        author = re.sub(r'[^0-9]', '', split_msg[-1])
-        if (author != '' and quote != ''):
-            quote_list.append(quote)
-            author_list.append(author)
-    df = pd.DataFrame({'quote': quote_list, 'author': author_list})
-    del quote_list,author_list
-    df.to_csv(str(ctx.message.channel.id) + '.csv', index=False)
-    await(await ctx.send('Channel quotes saved!')).delete(delay=10)
-                
 @client.command()
 async def mostquoted(ctx):
-    try:
-        channeldf = pd.read_csv('channels.csv')
-        channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
-        df = pd.read_csv(str(channelid) + '.csv', sep=',')
-        items_counts = df['author'].value_counts()
-        max_item = items_counts.max()
-        df = df.author.mode()
-        await ctx.send('%s with %s quotes to their name.' % (mention(ctx, df.values[0]),max_item))
-    except FileNotFoundError:
+    collection = db['quotes']
+    if collection.count_documents({ 'server_id':ctx.message.guild.id }, limit = 1) != 0:
+        maxauthor = collection.aggregate( [{ '$match': {'server_id':int(ctx.message.guild.id)}}, { "$unwind": "$author" }, { "$sortByCount": "$author" }] )
+        maxauthor = list(maxauthor)[0]
+        max_item_count = maxauthor['count']
+        author = maxauthor['_id']
+        await ctx.send('%s with %s quotes to their name.' % (mention(ctx, author),max_item_count))
+    else:
         print('Usr attempted +mostquoted in srvr with no quotes')
         await(await ctx.send('This server does not have any quotes.')).delete(delay=10)
 
 @client.command()
 async def randomquote(ctx,*,message=None):
+    collection = db['quotes']
     try:
         if (message == None):
-            channeldf = pd.read_csv('channels.csv')
-            channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
-            df = pd.read_csv(str(channelid) + '.csv', sep=',')
-            numrows = df.shape[0]
-            rownum = random.randint(0,numrows-1)
-            author = df.iat[rownum, 1]
-            quote = df.iat[rownum, 0]
+            document = collection.aggregate([{ '$match': {'server_id':int(ctx.message.guild.id)}},{ '$sample': { 'size': 1 } }])
+            document = list(document)[0]
         else:
-            channeldf = pd.read_csv('channels.csv')
-            channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
-            df = pd.read_csv(str(channelid) + '.csv', sep=',')
             #get the userid that the message sender is querying about (using the same code that the message grabber for the quotes channel uses)
             history = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message) + "\n"
             #Now for finding the author:
@@ -191,24 +159,17 @@ async def randomquote(ctx,*,message=None):
             if author == '':
                 await(await ctx.send('<@%s> not a valid author!' % ctx.author.id)).delete(delay=10)
                 return
-            df = df.loc[df['author'] == int(author)]
-            numrows = df.shape[0]
-            rownum = random.randint(0,numrows-1)
-            author = df.iat[rownum, 1]
-            quote = df.iat[rownum, 0]
-        await ctx.send(str(quote) + " - %s" % mention(ctx, author))
-    except FileNotFoundError:
+            document = collection.aggregate([{ '$match': {'server_id':int(ctx.message.guild.id)}},{ '$match': {'author':int(author)}},{ '$sample': { 'size': 1 } }])
+            document = list(document)[0]
+        await ctx.send(document['quote'] + " - %s" % mention(ctx, document['author']))
+    except IndexError:
         print('User attempted +randomquote in server with no quotes')
-        await(await ctx.send('This server does not have any quotes.')).delete(delay=10)
+        await ctx.send('Either this server or the author you mentioned does not have any quotes.')
 
 @client.command()
 async def numquotes(ctx,*,message):
     try:
-        #var message = message content besides command
-        #get correct csv file for server (var df)
-        channeldf = pd.read_csv('channels.csv')
-        channelid = channeldf.loc[channeldf['Server_ID'] == ctx.message.guild.id, 'Channel_ID'].values[0]
-        df = pd.read_csv(str(channelid) + '.csv', sep=',')
+        collection = db['quotes']
         #get the userid that the message sender is querying about (using the same code that the message grabber for the quotes channel uses)
         history = re.sub(r'[^A-Za-z0-9\s,."-]+', '', message) + "\n"
         #Now for finding the author:
@@ -216,26 +177,23 @@ async def numquotes(ctx,*,message):
         split_history = history.split(" ")
         #Substitute any non numberic characters for blank and grab the last word in the message (this assumes the author is the last word which it must be for this to work)
         author = re.sub(r'[^0-9]', '', split_history[-1])
-        userquotes = df['author'].value_counts().to_dict()
-        userquotes = userquotes[int(author)]
-        await ctx.send("%s has %s quote(s) attributed to them." % (mention(ctx, author),str(userquotes)))
-    except FileNotFoundError:
+        count = collection.count_documents( {'author':int(author),'server_id':ctx.message.guild.id} )
+        await ctx.send("%s has %s quote(s) attributed to them." % (mention(ctx, author),str(count)))
+    except TypeError:
         print('User attempted +numquotes in server with no quotes')
-        await(await ctx.send('This server does not have any quotes.')).delete(delay=10)
+        await ctx.send('This server does not have any quotes.')
 
 @client.command()
 @commands.has_role('QuotesBot Admin')
 async def togglementions(ctx):
-    df = pd.read_csv('channels.csv')
-    mentions = df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions'].values[0]
-    if mentions == 'On':
-        df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions']='Off'
-        df.to_csv('channels.csv', index=False)
-        await(await ctx.send('User mentions turned off')).delete(delay=10)
+    collection = db['servers']
+    mentions = collection.find_one({'server_id':ctx.message.guild.id})
+    if mentions['mentions'] == True:
+        collection.update_one({'server_id':ctx.message.guild.id},{'$set' : {'mentions':False}})
+        await ctx.send('User mentions turned off.')
     else:
-        df.loc[df['Server_ID'] == ctx.message.guild.id, 'Mentions']='On'
-        df.to_csv('channels.csv', index=False)
-        await(await ctx.send('User mentions turned on')).delete(delay=10)
+        collection.update_one({'server_id':ctx.message.guild.id},{'$set' : {'mentions':True}})
+        await ctx.send('User mentions turned on.')
 
 @client.command()
 async def help(ctx):
@@ -251,7 +209,6 @@ async def help(ctx):
     embed.add_field(name='+setquoteschannel', value='Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='+delquoteschannel', value='Type this in the channel your quotes channel if you wish for it to no longer be a quotes channel. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='+togglementions', value='Toggles whether a the author of the quote is mentioned or not when randomquote and numquotes are run. On by default, but turn off to avoid excessive mentions in large servers. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
-    embed.add_field(name='+save', value='Will back up a prior quotes channel if you have one. Run it in the server you wish to add to your quotes database. Note that the quotes must be formatted correctly. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='Links', value='[Github](https://github.com/jacksors/Quotes-Discord-Bot) | [Support Server](https://discord.gg/DmYw7CbXfT)', inline=False)
     await ctx.send(embed=embed)
     
