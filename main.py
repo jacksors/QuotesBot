@@ -7,7 +7,6 @@ import os
 import numpy as np
 import random
 import pymongo
-import pprint
 from pymongo import MongoClient
 from topggapi import setup
 from random import choice
