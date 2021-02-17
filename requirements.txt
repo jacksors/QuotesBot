@@ -1,4 +1,3 @@
 discord
-pandas
 dblpy
 pymongo
