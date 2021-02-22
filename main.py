@@ -18,11 +18,12 @@ from bot_token import *
 
 intents = discord.Intents.default()
 intents.guilds = True
+intents.members = True
 client = commands.Bot(command_prefix = '+', intents=intents)
 
 client.remove_command('help')
 
-cluster = MongoClient('')
+cluster = MongoClient('mongodb://admin:Tulsaok918@127.0.0.1:27017/?authSource=admin')
 db = cluster['discordbot']
 
 def mention(ctx, usrid):
@@ -33,7 +34,7 @@ def mention(ctx, usrid):
         msg = '<@' + str(usrid) + '>'
         return msg
     else:
-        msg = '@' + str(ctx.guild.get_member(int(usrid)))
+        msg = '@' + str(ctx.guild.get_member(usrid))
         return msg
 
 @client.event
@@ -49,16 +50,16 @@ async def on_guild_join(guild):
     f.close
     print('Joined %s' % guild.name)
 
-@client.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.MissingRequiredArgument):
-        print("User tried a command without all required arguments")
-        await(await ctx.send('Missing required argument.')).delete(delay=10)
-    if isinstance(error, MissingPermissions):
-        print("User without elevated permissions tried a command that requires them")
-        await(await ctx.send('You must have the role QuotesBot Admin to run this command.')).delete(delay=10)
-    else:
-        print(error)
+#@client.event
+#async def on_command_error(ctx, error):
+#    if isinstance(error, commands.MissingRequiredArgument):
+#        print("User tried a command without all required arguments")
+#        await(await ctx.send('Missing required argument.')).delete(delay=10)
+#    if isinstance(error, MissingPermissions):
+#        print("User without elevated permissions tried a command that requires them")
+#        await(await ctx.send('You must have the role QuotesBot Admin to run this command.')).delete(delay=10)
+#    else:
+#        print(error)
 
 @client.event
 async def on_message(message):
@@ -209,6 +210,7 @@ async def help(ctx):
     embed.add_field(name='+delquoteschannel', value='Type this in the channel your quotes channel if you wish for it to no longer be a quotes channel. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='+togglementions', value='Toggles whether a the author of the quote is mentioned or not when randomquote and numquotes are run. On by default, but turn off to avoid excessive mentions in large servers. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='Links', value='[Github](https://github.com/jacksors/Quotes-Discord-Bot) | [Support Server](https://discord.gg/DmYw7CbXfT) | [Top.gg](https://top.gg/bot/799028695368073255)', inline=False)
+    embed.set_footer(text="QuotesBot by @jackson#1001")
     await ctx.send(embed=embed)
     
 client.run(BOT_TOKEN)
