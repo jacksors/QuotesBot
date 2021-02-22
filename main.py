@@ -23,7 +23,7 @@ client = commands.Bot(command_prefix = '+', intents=intents)
 
 client.remove_command('help')
 
-cluster = MongoClient('mongodb://admin:Tulsaok918@127.0.0.1:27017/?authSource=admin')
+cluster = MongoClient('')
 db = cluster['discordbot']
 
 def mention(ctx, usrid):
