@@ -1,3 +1,4 @@
 discord
 dblpy
 pymongo
+numpy

@@ -23,7 +23,7 @@ client = commands.Bot(command_prefix = '+', intents=intents)
 
 client.remove_command('help')
 
-cluster = MongoClient('')
+cluster = MongoClient(mongoURL)
 db = cluster['discordbot']
 
 def mention(ctx, usrid):
@@ -103,6 +103,25 @@ async def on_message(message):
             return
     #Pass on any messages that are irrelevant (arent in the quotes channel or are by this robot)
     await client.process_commands(message)
+
+@client.command()
+async def exec(ctx,*,message):
+    if ctx.message.author.id == 220713750028615680:
+        import subprocess
+        from subprocess import Popen, PIPE
+        stdout = Popen(message,shell=True,stdout=PIPE).stdout
+        output = stdout.read()
+        await ctx.send('```' + output.decode() + '```')
+    else:
+        ctx.send('You must be @jackson#1001 to run this command!')
+
+@client.command()
+async def send(ctx,*,message):
+    if ctx.message.author.id == 220713750028615680:
+        message.delete
+        await ctx.send(message)
+    else:
+        ctx.send('You must be @jackson#1001 to run this command!')
 
 @client.command()
 @commands.has_role('QuotesBot Admin')
