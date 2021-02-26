@@ -118,7 +118,7 @@ async def exec(ctx,*,message):
 @client.command()
 async def send(ctx,*,message):
     if ctx.message.author.id == 220713750028615680:
-        message.delete
+        await message.delete()
         await ctx.send(message)
     else:
         ctx.send('You must be @jackson#1001 to run this command!')
