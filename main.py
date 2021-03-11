@@ -82,7 +82,7 @@ async def on_message(message):
         #Make sure the message included a quote and author
         if ((author != '' and quote != '')):
             collection = db['quotes']
-            collection.insert_one({'quote':quote, 'author':int(author), 'channel_id':message.channel.id, 'server_id':message.guild.id})
+            collection.insert_one({'quote':quote, 'author':int(author), 'channel_id':message.channel.id, 'server_id':message.guild.id, 'message_id':message.id})
             await(await message.channel.send("Quote by <@" + author + "> added!")).delete(delay=10)
             return
         elif (message.content == "+setquoteschannel"):
@@ -204,6 +204,20 @@ async def numquotes(ctx,*,message):
 
 @client.command()
 @commands.has_role('QuotesBot Admin')
+async def delquote(ctx,*,message):
+    collection = db['quotes']
+    history = re.sub(r'[\u201C\u201D\u201E\u201F\u2033\u2036]', '"', message)
+    history = re.sub(r'[^A-Za-z0-9\s,.?!:;()@#$%^&*_+-=<>"-]+', '', history) + "\n"
+    quote = re.findall(r'\"(.+?)\"',history)
+    quote = str(quote).strip("[]")
+    split_history = history.split(" ")
+    author = re.sub(r'[^0-9]', '', split_history[-1])
+    count = collection.count_documents( {'quote':quote, 'author':int(author), 'server_id':int(ctx.message.guild.id)} )
+    collection.delete_many({'quote':quote, 'author':int(author), 'server_id':int(ctx.message.guild.id)})
+    await ctx.send('Deleted %s quotes matching %s' % (count, message))
+
+@client.command()
+@commands.has_role('QuotesBot Admin')
 async def togglementions(ctx):
     collection = db['servers']
     mentions = collection.find_one({'server_id':ctx.message.guild.id})
@@ -225,6 +239,7 @@ async def help(ctx):
     embed.add_field(name='+mostquoted', value='Outputs the person with the most quotes attributed to them.', inline=False)
     embed.add_field(name='+randomquote (optional: @user)', value='Outputs a random quote from the user-specified quotes channel. Optionally, mention a user to get a random quote attributed to them.   ', inline=False)
     embed.add_field(name='+numquotes @user', value='Type this and @ a user to see how many quotes they have attributed to them.', inline=False)
+    embed.add_field(name='+delquote', value='This deletes a quote from the database. To use, type +delquote (original message from quotes channel). In order to run this command, you must have the role \"QuotesBot Admin\". For an example, check out the top.gg link at the bottom of this messge.', inline=False)
     embed.add_field(name='+setquoteschannel', value='Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='+delquoteschannel', value='Type this in the channel your quotes channel if you wish for it to no longer be a quotes channel. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
     embed.add_field(name='+togglementions', value='Toggles whether a the author of the quote is mentioned or not when randomquote and numquotes are run. On by default, but turn off to avoid excessive mentions in large servers. In order to run this command, you must have the role \"QuotesBot Admin\"', inline=False)
