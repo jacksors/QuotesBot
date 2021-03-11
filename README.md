@@ -14,6 +14,8 @@ Outputs the person with the most quotes attributed to them
 Outputs a random quote from the user-specified quotes channel. Optionally, mention a user to get a random quote attributed to them.
 ### +numquotes @user
 Outputs the number of quotes that the person mentioned has attributed to them.
+### +delquote quote
+This deletes a quote from the database. To use, type +delquote (original message from quotes channel). For example, if there were a quote "This is a quote" @User, to delete it from the database you would run +delquote "This is a quote" @User. Note that, if you copy and paste the message, you may have to retype the author in order for it to work. Also, the quote is only deleted from the database and not the quotes channel in your server. In order to run this command, you must have the role "QuotesBot Admin".
 ### +setquoteschannel
 Type this in the channel you wish to be your servers quotes channel. In order to run this command, you must have the role "QuotesBot Admin"
 ### +delquoteschannel 
