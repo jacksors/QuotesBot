@@ -98,7 +98,7 @@ async def on_message(message):
             return
         elif (int(author) == 799028695368073255):
             await message.delete()
-            await(await message.channel.send("<@%s> the bot cannot speak!" % message.author.id)).delete(delay=10)
+            await(await message.channel.send("<@%s>, I cannot speak!" % message.author.id)).delete(delay=10)
         else:
             #If the user sends a message that isnt a quote delete the message, display the warning, and delete the warning after 10 seconds
             await message.delete()
