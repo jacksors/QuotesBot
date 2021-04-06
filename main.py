@@ -80,7 +80,7 @@ async def on_message(message):
         author = re.sub(r'[^0-9]', '', split_history[-1])
         #Onto the database interaction using Pandas (pd)
         #Make sure the message included a quote and author
-        if ((author != '' and quote != '')):
+        if ((author != '' and quote != '' and author != 799028695368073255)):
             collection = db['quotes']
             collection.insert_one({'quote':quote, 'author':int(author), 'channel_id':message.channel.id, 'server_id':message.guild.id, 'message_id':message.id})
             await(await message.channel.send("Quote by <@" + author + "> added!")).delete(delay=10)
@@ -96,6 +96,9 @@ async def on_message(message):
             await message.delete()
             await(await message.channel.send("<@%s> please do not send commands in the quotes channel!" % message.author.id)).delete(delay=10)
             return
+        elif (author == 799028695368073255):
+            await message.delete()
+            await(await message.channel.send("<@%s> the bot cannot speak!" % message.author.id)).delete(delay=10)
         else:
             #If the user sends a message that isnt a quote delete the message, display the warning, and delete the warning after 10 seconds
             await message.delete()
