@@ -7,7 +7,7 @@ import logging
 
 
 bot = lightbulb.BotApp(
-    token=settings.BOT_TOKEN, prefix="+", logs="DEBUG", help_slash_command=True
+    token=settings.BOT_TOKEN, prefix="+", help_slash_command=True
 )
 
 

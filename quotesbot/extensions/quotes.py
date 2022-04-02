@@ -12,39 +12,51 @@ plugin = lightbulb.Plugin("Quotes")
 
 @plugin.listener(hikari.events.GuildMessageCreateEvent)
 async def log_quote(message: hikari.events.GuildMessageCreateEvent) -> None:
-    if (
-        message.message.channel_id
-        == DB.servers.find_one({"server_id": message.message.guild_id})["channel_id"]
-    ):
-        if message.author.is_bot and not message.content.startswith('"'):
-            await asyncio.sleep(30)
-            await message.message.delete()
-        elif not message.author.is_bot:
-            try:
-                quote = quotesbot.GuildMessageQuote(message)
-                DB.quotes.insert_one(
-                    {
-                        "quote": quote.text,
-                        "author": quote.author_id,
-                        "server_id": quote.guild_id,
-                    }
-                )
-                logging.debug(f"Quote {quote.text} - {quote.author_id} inserted")
-                await message.message.add_reaction("✅")
-            except quotesbot.InvalidAuthor:
+    try:
+        if (
+            message.message.channel_id
+            == DB.servers.find_one({"server_id": message.message.guild_id})[
+                "channel_id"
+            ]
+        ):
+            if message.author.is_bot and not message.content.startswith('"'):
+                await asyncio.sleep(30)
                 await message.message.delete()
-                await message.message.respond(
-                    ":bangbang: Author could not be found! Please check `/help` for formatting instructions."
-                )
-                logging.debug(f"Invalid author from message {message.message.content}")
-            except quotesbot.InvalidQuote:
-                await message.message.delete()
-                await message.message.respond(
-                    ":bangbang: Quote text could not be found! Please check `/help` for formatting instructions."
-                )
-                logging.debug(
-                    f"Invalid quote text from message {message.message.content}"
-                )
+            elif not message.author.is_bot:
+                try:
+                    quote = quotesbot.GuildMessageQuote(message)
+                    DB.quotes.insert_one(
+                        {
+                            "quote": quote.text,
+                            "author": quote.author_id,
+                            "server_id": quote.guild_id,
+                        }
+                    )
+                    logging.debug(f"Quote {quote.text} - {quote.author_id} inserted")
+                    await message.message.add_reaction("✅")
+                except quotesbot.InvalidAuthor:
+                    await message.message.delete()
+                    await message.message.respond(
+                        ":bangbang: Author could not be found! Please check `/help` for formatting instructions."
+                    )
+                    logging.debug(
+                        f"Invalid author from message {message.message.content}"
+                    )
+                except quotesbot.InvalidQuote:
+                    await message.message.delete()
+                    await message.message.respond(
+                        ":bangbang: Quote text could not be found! Please check `/help` for formatting instructions."
+                    )
+                    logging.debug(
+                        f"Invalid quote text from message {message.message.content}"
+                    )
+    except TypeError:
+        DB.servers.insert_one(
+            {"server_id": message.guild_id, "channel_id": 0, "mentions": True}
+        )
+        logging.info(
+            f"Could not find an entry in servers collection for guild_id {message.guild_id}, so one was added."
+        )
 
 
 @plugin.command()
@@ -146,11 +158,11 @@ async def numquotes(ctx: lightbulb.Context) -> None:
         if count == 1:
             await ctx.respond(
                 f"{await quotesbot.mention(ctx, ctx.options.user.id)} has 1 quote attributed to them."
-        )
+            )
         else:
             await ctx.respond(
                 f"{await quotesbot.mention(ctx, ctx.options.user.id)} has {count} quotes attributed to them."
-        )
+            )
     except TypeError:
         logging.debug("User attempted numquotes in a server with no quotes")
         await ctx.respond("This server does not have any quotes.")
