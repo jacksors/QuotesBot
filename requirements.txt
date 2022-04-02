@@ -1,4 +1,3 @@
-discord
-dblpy
+hikari
+hikari-lightbulb
 pymongo
-numpy

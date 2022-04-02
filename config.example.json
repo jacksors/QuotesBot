@@ -1,0 +1,8 @@
+{
+    "bot_token": "",
+    "mongo_url": "",
+    "mongo_database": "",
+    "quotes_collection": "",
+    "servers_collection": "",
+    "config_guild": ""
+}

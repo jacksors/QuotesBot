@@ -130,6 +130,6 @@ dmypy.json
 
 # user-created
 bot_token.py
-*.csv
-.vscode/*
+.vscode
 serverlist.txt
+config.json
