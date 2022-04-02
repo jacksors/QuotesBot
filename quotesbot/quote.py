@@ -1,9 +1,7 @@
 import re
 import hikari
 import lightbulb
-import logging
-from quotesbot import DB, bot
-from abc import ABC, abstractmethod
+from quotesbot import DB
 
 
 class InvalidAuthor(Exception):
