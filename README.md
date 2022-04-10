@@ -7,6 +7,7 @@ My hosted implementation of this bot (up 24/7): [Add to your server](https://top
 + `Hikari`
 + `Hikari Lightbulb`
 + `Pymongo`
++ `uvloop' if running on *nix
 
 ## Setup
 
