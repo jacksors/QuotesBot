@@ -7,7 +7,7 @@ import logging
 
 
 bot = lightbulb.BotApp(
-    token=settings.BOT_TOKEN, prefix="+", help_slash_command=True
+    token=settings.BOT_TOKEN, prefix="+", logs="DEBUG", help_slash_command=True
 )
 
 
@@ -23,11 +23,12 @@ async def mention(ctx: lightbulb.Context, usrid: int) -> str:
         msg = f"<@{usrid}>"
         return msg
     else:
-        user = ctx.bot.cache.get_user(usrid)
-        if user == None:
-            user = await ctx.bot.rest.fetch_user(usrid)
-            logging.debug("Fetching user from discord...")
-        msg = f"@{user.username}#{user.discriminator}"
+        user = await ctx.bot.rest.fetch_member(ctx.guild_id, usrid)
+        logging.debug("Fetching user from discord...")
+        if user.nickname:
+            msg = f"@{user.nickname}"
+        else:
+            msg = f"@{user.username}"
         return msg
 
 

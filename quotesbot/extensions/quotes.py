@@ -19,9 +19,9 @@ async def log_quote(message: hikari.events.GuildMessageCreateEvent) -> None:
                 "channel_id"
             ]
         ):
-            if message.author.is_bot and not message.content.startswith('"'):
-                await asyncio.sleep(30)
-                await message.message.delete()
+            if message.author.is_bot and (message.content is None or not message.content.startswith("\"")):
+                    await asyncio.sleep(30)
+                    await message.message.delete()
             elif not message.author.is_bot:
                 try:
                     quote = quotesbot.GuildMessageQuote(message)
@@ -32,7 +32,7 @@ async def log_quote(message: hikari.events.GuildMessageCreateEvent) -> None:
                             "server_id": quote.guild_id,
                         }
                     )
-                    logging.debug(f"Quote {quote.text} - {quote.author_id} inserted")
+                    logging.debug(f"Quote {quote.text} - {quote.author_id} inserted via quotes channel message")
                     await message.message.add_reaction("✅")
                 except quotesbot.InvalidAuthor:
                     await message.message.delete()
@@ -76,6 +76,7 @@ async def quote(ctx: lightbulb.SlashContext | lightbulb.PrefixContext) -> None:
     )
     await ctx.respond(f"Added quote by {await quotesbot.mention(ctx, quote.author.id)}")
     await quote.to_quotes_channel()
+    logging.debug(f"Quote {quote.text} - {quote.author_id} inserted via quote command.")
 
 
 @plugin.command()
@@ -96,10 +97,12 @@ async def mostquoted(ctx: lightbulb.Context) -> None:
         await ctx.respond(
             f"The user with the most quotes is {await quotesbot.mention(ctx, maxauthor['_id'])} with {maxauthor['count']} quotes to their name."
         )
+        logging.debug("Mostquoted successfully called.")
     else:
         await ctx.respond(
             "This server doesn't have any quotes! Use `/help` to see how to add one."
         )
+        logging.debug("Mostquoted called in server with no quotes.")
 
 
 @plugin.command()
@@ -139,11 +142,13 @@ async def randomquote(ctx: lightbulb.Context) -> None:
         await ctx.respond(
             f"\"{document['quote']}\" - {await quotesbot.mention(ctx, document['author'])}"
         )
+        logging.debug("Randomquote successfully called.")
     except IndexError:
         logging.debug("Randomquote attempted in server with no quotes")
         await ctx.respond(
             f"Either this server or the author you mentioned does not have any quotes."
         )
+        logging.debug("Randomquote could not find any quotes.")
 
 
 @plugin.command()
@@ -163,8 +168,9 @@ async def numquotes(ctx: lightbulb.Context) -> None:
             await ctx.respond(
                 f"{await quotesbot.mention(ctx, ctx.options.user.id)} has {count} quotes attributed to them."
             )
+        logging.debug("Numquotes successfully called.")
     except TypeError:
-        logging.debug("User attempted numquotes in a server with no quotes")
+        logging.debug("Numquotes called in a server with no quotes")
         await ctx.respond("This server does not have any quotes.")
 
 
@@ -180,11 +186,13 @@ async def quotemessage(ctx: lightbulb.MessageContext) -> None:
             {"quote": text, "author": author.id, "server_id": ctx.guild_id}
         )
         await ctx.respond(
-            f"Message by {await quotesbot.mention(ctx, author)} added to quotes."
+            f"Message by {await quotesbot.mention(ctx, author.id)} added to quotes."
         )
         await quote.to_quotes_channel()
+        logging.debug(f"Quote {quote.text} - {quote.author_id} inserted via context menu command.")
     else:
         await ctx.respond(f"Could not parse any text from the message!")
+        logging.debug("Context menu quote command could not parse any text from the message.")
 
 
 def load(bot: lightbulb.BotApp):
